@@ -5,7 +5,9 @@ import ctypes
 
 # Disable failsafe to allow full touchpad area
 pyautogui.FAILSAFE = False
-# Virtual key codes for media control\ nVK_MEDIA_PLAY_PAUSE = 0xB3
+
+# Virtual key codes for media control
+VK_MEDIA_PLAY_PAUSE = 0xB3
 VK_MEDIA_NEXT_TRACK  = 0xB0
 VK_MEDIA_PREV_TRACK  = 0xB1
 VK_VOLUME_UP         = 0xAF
@@ -14,7 +16,9 @@ VK_VOLUME_DOWN       = 0xAE
 app = Flask(__name__)
 
 def send_media_key(vk_code):
+    # натиснути
     ctypes.windll.user32.keybd_event(vk_code, 0, 0, 0)
+    # відпустити
     ctypes.windll.user32.keybd_event(vk_code, 0, 2, 0)
 
 # --- HTML Templates ---
@@ -66,7 +70,7 @@ SITES_HTML = """
 
 POWER_HTML = """
 <!DOCTYPE html>
-<html lang='uk'>
+<html lang='ук'>
 <head>
   <meta charset='UTF-8'>
   <title>Живлення</title>
@@ -96,19 +100,45 @@ DISPLAYS_HTML = """
   <title>Дисплеї</title>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <style>
-    body { font-family: sans-serif; background: #111; color: #fff; text-align: center; margin: 0; padding: 2em; }
-    .button { display: block; margin: 1em auto; padding: 1em; background: #17a2b8; color: #fff; font-size: 1.2em; text-decoration: none; border-radius: 0.5em; width: 90%; max-width: 300px; }
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 2em;
+    }
+    .button {
+      display: block;
+      margin: 0.8em auto;
+      padding: 0.8em 1em;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      max-width: 280px;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+    /* один колір для всієї цієї сторінки */
+    .displays { background: #00B8D4; }
   </style>
 </head>
 <body>
   <h1>Дисплеї</h1>
-  <a class='button' href='/'>← Назад</a>
-  <a class='button' href='/launch/display_pc'>Дисплей ПК</a>
-  <a class='button' href='/launch/display_tv'>Дисплей ТВ</a>
-  <a class='button' href='/launch/display_extend'>Розширити</a>
+  <a class="button displays" href="/">← Назад</a>
+  <a class="button displays" href="/launch/display_pc">Дисплей ПК</a>
+  <a class="button displays" href="/launch/display_tv">Дисплей ТВ</a>
+  <a class="button displays" href="/launch/display_extend">Розширити</a>
 </body>
 </html>
 """
+
 
 MULTIMEDIA_HTML = """
 <!DOCTYPE html>
@@ -118,21 +148,47 @@ MULTIMEDIA_HTML = """
   <title>Мультимедіа</title>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <style>
-    body { font-family: sans-serif; background: #111; color: #fff; text-align: center; margin: 0; padding: 2em; }
-    .button { display: block; margin: 1em auto; padding: 1em; background: #6c757d; color: #fff; font-size: 1.2em; text-decoration: none; border-radius: .5em; width: 90%; max-width: 300px; }
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 2em;
+    }
+    .button {
+      display: block;
+      margin: 0.8em auto;
+      padding: 0.8em 1em;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      max-width: 280px;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+    /* фіолетовий для мультимедіа */
+    .multimedia { background: #AA00FF; }
   </style>
 </head>
 <body>
   <h1>Мультимедіа</h1>
-  <a class='button' href='/media/playpause'>Плей/Пауза</a>
-  <a class='button' href='/media/volumeup'>Звук +</a>
-  <a class='button' href='/media/volumedown'>Звук -</a>
-  <a class='button' href='/media/next'>Наступне</a>
-  <a class='button' href='/media/prev'>Попереднє</a>
-  <a class='button' href='/'>← Назад</a>
+  <a class="button multimedia" href="/media/playpause">Плей/Пауза</a>
+  <a class="button multimedia" href="/media/volumeup">Звук +</a>
+  <a class="button multimedia" href="/media/volumedown">Звук −</a>
+  <a class="button multimedia" href="/media/next">Наступне</a>
+  <a class="button multimedia" href="/media/prev">Попереднє</a>
+  <a class="button multimedia" href="/">← Назад</a>
 </body>
 </html>
 """
+
 
 MOUSEPAD_HTML = """
 <!DOCTYPE html>
@@ -142,16 +198,59 @@ MOUSEPAD_HTML = """
   <title>Тачпад</title>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <style>
-    body { font-family: sans-serif; background: #000; color: #fff; text-align: center; margin: 0; padding: 0; overflow: hidden; }
-    .button { display: block; margin: 1em auto; padding: 1em; background: #28a745; color: #fff; font-size: 1.2em; text-decoration: none; border-radius: 0.5em; width: 90%; max-width: 300px; }
-    #touchpad { margin: 1em auto; background: #222; width: 90%; max-width: 360px; height: 360px; border: 2px solid #555; border-radius: 8px; touch-action: none; }
-    #keyboard { display: none; width: 90%; max-width: 360px; padding: 1em; font-size: 1.2em; border-radius: 0.5em; margin-top: 1em; }
+    body {
+      font-family: sans-serif;
+      background: #000;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 2em;
+    }
+    #touchpad {
+      margin: 1em auto;
+      background: #222;
+      width: 90%;
+      max-width: 360px;
+      height: 360px;
+      border: 2px solid #555;
+      border-radius: 8px;
+      touch-action: none;
+    }
+    textarea {
+      display: none;
+      width: 90%;
+      max-width: 360px;
+      padding: 1em;
+      font-size: 1.2em;
+      border-radius: 0.5em;
+      margin-top: 1em;
+    }
+    .button {
+      display: block;
+      margin: 0.8em auto;
+      padding: 0.8em 1em;
+      text-decoration: none;
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      max-width: 280px;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+    /* оранжевий для миші */
+    .mousepad { background: #FF6D00; }
   </style>
 </head>
 <body>
+  <h1>Тачпад</h1>
   <div id='touchpad'></div>
   <textarea id='keyboard' placeholder='Введіть текст...'></textarea>
-  <a class='button' href='/'>← Назад</a>
+  <a class="button mousepad" href="/">← Назад</a>
   <script>
     const tp = document.getElementById('touchpad');
     let isDown = false, lastX = 0, lastY = 0, queued = false, dxTotal = 0, dyTotal = 0;
@@ -161,7 +260,9 @@ MOUSEPAD_HTML = """
       isDown = true; lastX = e.clientX; lastY = e.clientY;
       const now = Date.now();
       if(now - lastTapTime < 300) {
-        const kb = document.getElementById('keyboard'); kb.style.display = 'block'; kb.focus();
+        const kb = document.getElementById('keyboard');
+        kb.style.display = 'block';
+        kb.focus();
       }
       lastTapTime = now;
       tp.setPointerCapture(e.pointerId);
@@ -175,7 +276,11 @@ MOUSEPAD_HTML = """
       if(!queued) {
         queued = true;
         setTimeout(() => {
-          fetch('/mouse/move', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dx:Math.round(dxTotal*3), dy:Math.round(dyTotal*3)})});
+          fetch('/mouse/move', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({dx:Math.round(dxTotal*3), dy:Math.round(dyTotal*3)})
+          });
           dxTotal=0; dyTotal=0; queued=false;
         }, 16);
       }
@@ -187,70 +292,102 @@ MOUSEPAD_HTML = """
     });
 
     document.getElementById('keyboard').addEventListener('input', e => {
-      fetch('/type', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:e.target.value})});
-      e.target.value='';
+      fetch('/type', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:e.target.value})
+      });
+      e.target.value = '';
     });
   </script>
 </body>
 </html>
 """
 
+
 # --- Routes ---
 @app.route('/')
-def home(): return render_template_string(HOME_HTML)
+def home():
+    return render_template_string(HOME_HTML)
 
 @app.route('/sites')
-def sites(): return render_template_string(SITES_HTML)
+def sites():
+    return render_template_string(SITES_HTML)
 
 @app.route('/power')
-def power(): return render_template_string(POWER_HTML)
+def power():
+    return render_template_string(POWER_HTML)
 
 @app.route('/displays')
-def displays(): return render_template_string(DISPLAYS_HTML)
+def displays():
+    return render_template_string(DISPLAYS_HTML)
 
 @app.route('/multimedia')
-def multimedia(): return render_template_string(MULTIMEDIA_HTML)
+def multimedia():
+    return render_template_string(MULTIMEDIA_HTML)
 
 @app.route('/mousepad')
-def mousepad(): return render_template_string(MOUSEPAD_HTML)
+def mousepad():
+    return render_template_string(MOUSEPAD_HTML)
 
 @app.route('/mouse/move', methods=['POST'])
 def mouse_move():
-    data=request.get_json(); pyautogui.moveRel(data.get('dx',0), data.get('dy',0)); return jsonify(success=True)
+    data = request.get_json()
+    pyautogui.moveRel(data.get('dx', 0), data.get('dy', 0))
+    return jsonify(success=True)
 
 @app.route('/mouse/click', methods=['POST'])
-def mouse_click():pyautogui.click();return jsonify(success=True)
+def mouse_click():
+    pyautogui.click()
+    return jsonify(success=True)
 
 @app.route('/type', methods=['POST'])
 def type_text():
-    text=request.get_json().get('text',''); pyautogui.write(text); return jsonify(success=True)
+    text = request.get_json().get('text', '')
+    pyautogui.write(text)
+    return jsonify(success=True)
 
 @app.route('/media/<action>')
 def media_control(action):
-    keys={'playpause':VK_MEDIA_PLAY_PAUSE,'next':VK_MEDIA_NEXT_TRACK,'prev':VK_MEDIA_PREV_TRACK,'volumeup':VK_VOLUME_UP,'volumedown':VK_VOLUME_DOWN}
-    send_media_key(keys.get(action,0))
+    keys = {
+        'playpause': VK_MEDIA_PLAY_PAUSE,
+        'next':     VK_MEDIA_NEXT_TRACK,
+        'prev':     VK_MEDIA_PREV_TRACK,
+        'volumeup': VK_VOLUME_UP,
+        'volumedown':VK_VOLUME_DOWN
+    }
+    vk = keys.get(action)
+    if vk:
+        send_media_key(vk)
     return redirect('/multimedia')
 
 @app.route('/launch/<action>')
 def launch(action):
-    edge=r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
-    apps={
-      'browser':edge,'youtube':[edge,'https://www.youtube.com'], 'simpsonsua':[edge,'https://simpsonsua.tv/'],
-      'uakino':[edge,'https://uakino.me/'], 'shutdown':'shutdown /s /t 0', 'restart':'shutdown /r /t 0',
-      'sleep':'rundll32.exe powrprof.dll,SetSuspendState 0,1,0',
-      'display_pc':'C:\\Windows\\System32\\DisplaySwitch.exe /internal',
-      'display_tv':'C:\\Windows\\System32\\DisplaySwitch.exe /external',
-      'display_extend':'C:\\Windows\\System32\\DisplaySwitch.exe /extend'
+    edge = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    apps = {
+        'browser':      edge,
+        'youtube':      [edge, 'https://www.youtube.com'],
+        'simpsonsua':   [edge, 'https://simpsonsua.tv/'],
+        'uakino':       [edge, 'https://uakino.me/'],
+        'shutdown':     'shutdown /s /t 0',
+        'restart':      'shutdown /r /t 0',
+        'sleep':        'rundll32.exe powrprof.dll,SetSuspendState 0,1,0',
+        'display_pc':   r"C:\Windows\System32\DisplaySwitch.exe /internal",
+        'display_tv':   r"C:\Windows\System32\DisplaySwitch.exe /external",
+        'display_extend':r"C:\Windows\System32\DisplaySwitch.exe /extend",
     }
-    cmd=apps.get(action)
+    cmd = apps.get(action)
     if cmd:
         try:
-            if isinstance(cmd,list):subprocess.Popen(cmd)
-            elif action in ['shutdown','restart','sleep'] or action.startswith('display_'):subprocess.call(cmd,shell=True)
-            else:subprocess.Popen([cmd])
+            if isinstance(cmd, list):
+                subprocess.Popen(cmd)
+            elif action in ['shutdown','restart','sleep'] or action.startswith('display_'):
+                subprocess.call(cmd, shell=True)
+            else:
+                subprocess.Popen([cmd])
         except Exception as e:
             return f"<h2>Помилка: {e}</h2>"
     return redirect('/')
 
-if __name__=='__main__':
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
