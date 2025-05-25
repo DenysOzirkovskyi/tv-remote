@@ -1,12 +1,12 @@
-from flask import Flask, render_template_string, redirect, request, jsonify
+from flask import Flask, render_template_string, request, jsonify, redirect
 import subprocess
 import pyautogui
 import ctypes
+import time
 
-# Disable failsafe to allow full touchpad area
 pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0
 
-# Virtual key codes for media control
 VK_MEDIA_PLAY_PAUSE = 0xB3
 VK_MEDIA_NEXT_TRACK  = 0xB0
 VK_MEDIA_PREV_TRACK  = 0xB1
@@ -16,10 +16,37 @@ VK_VOLUME_DOWN       = 0xAE
 app = Flask(__name__)
 
 def send_media_key(vk_code):
-    # натиснути
     ctypes.windll.user32.keybd_event(vk_code, 0, 0, 0)
-    # відпустити
     ctypes.windll.user32.keybd_event(vk_code, 0, 2, 0)
+
+@app.route('/type', methods=['POST'])
+def type_text():
+    data = request.get_json()
+    text = data.get('text', '')
+    backspace = data.get('backspace', False)
+    if backspace:
+        pyautogui.press('backspace')
+    elif text:
+        pyautogui.write(text)
+    return jsonify(success=True)
+
+@app.route('/focus', methods=['POST'])
+def focus():
+    width, height = pyautogui.size()
+    pyautogui.click(width//2, height//2)
+    time.sleep(0.07)
+    pyautogui.click(width//2, height//2)
+    return jsonify(success=True)
+
+@app.route('/setlayout/<lang>', methods=['POST'])
+def setlayout(lang):
+    import win32api, win32con, win32gui
+    hwnd = win32gui.GetForegroundWindow()
+    if lang == 'ukr':
+        win32api.SendMessage(hwnd, win32con.WM_INPUTLANGCHANGEREQUEST, 0, 0x04220422)
+    elif lang == 'en':
+        win32api.SendMessage(hwnd, win32con.WM_INPUTLANGCHANGEREQUEST, 0, 0x04090409)
+    return jsonify(success=True)
 
 # --- HTML Templates ---
 HOME_HTML = """
@@ -125,7 +152,6 @@ DISPLAYS_HTML = """
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0,0,0,0.4);
     }
-    /* один колір для всієї цієї сторінки */
     .displays { background: #00B8D4; }
   </style>
 </head>
@@ -138,7 +164,6 @@ DISPLAYS_HTML = """
 </body>
 </html>
 """
-
 
 MULTIMEDIA_HTML = """
 <!DOCTYPE html>
@@ -173,7 +198,6 @@ MULTIMEDIA_HTML = """
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0,0,0,0.4);
     }
-    /* фіолетовий для мультимедіа */
     .multimedia { background: #AA00FF; }
   </style>
 </head>
@@ -189,13 +213,12 @@ MULTIMEDIA_HTML = """
 </html>
 """
 
-
 MOUSEPAD_HTML = """
 <!DOCTYPE html>
 <html lang='uk'>
 <head>
   <meta charset='UTF-8'>
-  <title>Тачпад</title>
+  <title>Тачпад + Ввід тексту</title>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
   <style>
     body {
@@ -211,19 +234,22 @@ MOUSEPAD_HTML = """
       background: #222;
       width: 90%;
       max-width: 360px;
-      height: 360px;
+      height: 200px;
       border: 2px solid #555;
       border-radius: 8px;
       touch-action: none;
     }
-    textarea {
-      display: none;
+    #keyboard {
+      display: block;
       width: 90%;
       max-width: 360px;
       padding: 1em;
       font-size: 1.2em;
       border-radius: 0.5em;
-      margin-top: 1em;
+      margin: 1em auto 0 auto;
+      background: #181818;
+      color: #fff;
+      border: 1px solid #555;
     }
     .button {
       display: block;
@@ -234,37 +260,38 @@ MOUSEPAD_HTML = """
       font-size: 1.1em;
       font-weight: bold;
       border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      background: #FF6D00;
       max-width: 280px;
+      border: none;
     }
     .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+      background: #ffa040;
     }
-    /* оранжевий для миші */
-    .mousepad { background: #FF6D00; }
+    #langToggle {
+      margin-top: 0.5em;
+      background: #006fff;
+      max-width: 200px;
+    }
+    #langToggle:hover {
+      background: #40a4ff;
+    }
   </style>
 </head>
 <body>
-  <h1>Тачпад</h1>
+  <h1>Тачпад + Ввід тексту</h1>
+  <button id="langToggle" class="button">🇺🇦 Українська</button>
   <div id='touchpad'></div>
-  <textarea id='keyboard' placeholder='Введіть текст...'></textarea>
-  <a class="button mousepad" href="/">← Назад</a>
+  <form id="kbForm" onsubmit="return false;">
+    <input id="keyboard" type="text" autocomplete="on" placeholder="Пиши тут…" />
+  </form>
+  <a class="button" href="/">← Назад</a>
   <script>
+    // --- Тачпад ---
     const tp = document.getElementById('touchpad');
     let isDown = false, lastX = 0, lastY = 0, queued = false, dxTotal = 0, dyTotal = 0;
-    let lastTapTime = 0;
 
     tp.addEventListener('pointerdown', e => {
       isDown = true; lastX = e.clientX; lastY = e.clientY;
-      const now = Date.now();
-      if(now - lastTapTime < 300) {
-        const kb = document.getElementById('keyboard');
-        kb.style.display = 'block';
-        kb.focus();
-      }
-      lastTapTime = now;
       tp.setPointerCapture(e.pointerId);
     });
 
@@ -291,13 +318,61 @@ MOUSEPAD_HTML = """
       fetch('/mouse/click', {method:'POST'});
     });
 
-    document.getElementById('keyboard').addEventListener('input', e => {
-      fetch('/type', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text:e.target.value})
-      });
-      e.target.value = '';
+    // --- Перемикання мови ---
+    let lang = 'ukr';
+    const langBtn = document.getElementById('langToggle');
+    langBtn.onclick = function() {
+      lang = lang === 'ukr' ? 'en' : 'ukr';
+      langBtn.innerText = lang === 'ukr' ? "🇺🇦 Українська" : "🇬🇧 English";
+      fetch('/setlayout/' + lang, {method:'POST'});
+      document.getElementById('keyboard').focus();
+    };
+
+    // --- Ввід тексту у реальному часі ---
+    const kbInput = document.getElementById('keyboard');
+    let lastValue = "";
+    let ignore = false;
+
+    // Коли щось змінюється — одразу летить на ПК
+    kbInput.addEventListener('input', function(e) {
+      if (ignore) return;
+      const txt = kbInput.value;   
+      if (txt.length > lastValue.length) {
+        // Додаємо лише нові символи
+        const add = txt.substring(lastValue.length);
+        fetch('/type', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({text: add})
+        });
+      } else if (txt.length < lastValue.length) {
+        // Видаляємо (бекспейс)
+        fetch('/type', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({backspace: true})
+        });
+      }
+      lastValue = txt;
+    });
+
+    // Enter на телефоні — надсилає весь текст і очищає поле
+    kbInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        fetch('/focus', {method:'POST'})
+          .then(() =>
+            fetch('/type', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({text: kbInput.value})
+            })
+          );
+        ignore = true;
+        kbInput.value = '';
+        lastValue = '';
+        setTimeout(()=>{ ignore = false; }, 100);
+      }
     });
   </script>
 </body>
@@ -341,12 +416,6 @@ def mouse_click():
     pyautogui.click()
     return jsonify(success=True)
 
-@app.route('/type', methods=['POST'])
-def type_text():
-    text = request.get_json().get('text', '')
-    pyautogui.write(text)
-    return jsonify(success=True)
-
 @app.route('/media/<action>')
 def media_control(action):
     keys = {
@@ -360,7 +429,6 @@ def media_control(action):
     if vk:
         send_media_key(vk)
     return redirect('/multimedia')
-
 @app.route('/launch/<action>')
 def launch(action):
     edge = r"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
@@ -376,6 +444,8 @@ def launch(action):
         'display_tv':   r"C:\Windows\System32\DisplaySwitch.exe /external",
         'display_extend':r"C:\Windows\System32\DisplaySwitch.exe /extend",
     }
+
+
     cmd = apps.get(action)
     if cmd:
         try:
