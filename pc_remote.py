@@ -279,7 +279,7 @@ MOUSEPAD_HTML = """
 </head>
 <body>
   <h1>Тачпад + Ввід тексту</h1>
-  <button id="langToggle" class="button">🇺🇦 Українська</button>
+  <button id="langToggle" class="button">🔄 Змінити мову ПК</button>
   <div id='touchpad'></div>
   <form id="kbForm" onsubmit="return false;">
     <input id="keyboard" type="text" autocomplete="on" placeholder="Пиши тут…" />
@@ -318,27 +318,23 @@ MOUSEPAD_HTML = """
       fetch('/mouse/click', {method:'POST'});
     });
 
-    // --- Перемикання мови ---
-    let lang = 'ukr';
-    const langBtn = document.getElementById('langToggle');
-    langBtn.onclick = function() {
-      lang = lang === 'ukr' ? 'en' : 'ukr';
-      langBtn.innerText = lang === 'ukr' ? "🇺🇦 Українська" : "🇬🇧 English";
-      fetch('/setlayout/' + lang, {method:'POST'});
+    // --- Кнопка зміни мови ---
+    document.getElementById('langToggle').onclick = function() {
+      fetch('/switch_lang', {method:'POST'});
       document.getElementById('keyboard').focus();
     };
 
-    // --- Ввід тексту у реальному часі ---
+    // --- Текст: відправляє Enter/Return з телефону ---
     const kbInput = document.getElementById('keyboard');
     let lastValue = "";
     let ignore = false;
 
-    // Коли щось змінюється — одразу летить на ПК
+    // Кожна нова буква чи стирання — летить на ПК
     kbInput.addEventListener('input', function(e) {
       if (ignore) return;
-      const txt = kbInput.value;   
+      const txt = kbInput.value;
       if (txt.length > lastValue.length) {
-        // Додаємо лише нові символи
+        // Додаємо нові символи
         const add = txt.substring(lastValue.length);
         fetch('/type', {
           method: 'POST',
@@ -346,7 +342,7 @@ MOUSEPAD_HTML = """
           body: JSON.stringify({text: add})
         });
       } else if (txt.length < lastValue.length) {
-        // Видаляємо (бекспейс)
+        // Бекспейс
         fetch('/type', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -356,7 +352,7 @@ MOUSEPAD_HTML = """
       lastValue = txt;
     });
 
-    // Enter на телефоні — надсилає весь текст і очищає поле
+    // Enter або Return — повний текст летить на ПК, поле очищається
     kbInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -377,6 +373,7 @@ MOUSEPAD_HTML = """
   </script>
 </body>
 </html>
+
 """
 
 
@@ -414,6 +411,13 @@ def mouse_move():
 @app.route('/mouse/click', methods=['POST'])
 def mouse_click():
     pyautogui.click()
+    return jsonify(success=True)
+@app.route('/switch_lang', methods=['POST'])
+def switch_lang():
+    import pyautogui
+    pyautogui.keyDown('altleft')
+    pyautogui.press('shiftleft')
+    pyautogui.keyUp('altleft')
     return jsonify(success=True)
 
 @app.route('/media/<action>')
