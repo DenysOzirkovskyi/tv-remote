@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, jsonify, redirect
 import subprocess
 import pyautogui
+import pyperclip
 import ctypes
 import time
 
@@ -160,9 +161,11 @@ MOUSEPAD_HTML = """
   <div id='touchpad'></div>
   <form id="kbForm" onsubmit="return false;">
     <textarea id="keyboard" rows="2" autocomplete="on" placeholder="Пиши тут…"></textarea>
+    <button type="button" class="button" onclick="sendText()">Відправити</button>
   </form>
   <a class="button" href="/">← Назад</a>
   <script>
+    // --- Тачпад ---
     const tp = document.getElementById('touchpad');
     let isDown = false, lastX = 0, lastY = 0, queued = false, dxTotal = 0, dyTotal = 0;
     tp.addEventListener('pointerdown', e => { isDown = true; lastX = e.clientX; lastY = e.clientY; tp.setPointerCapture(e.pointerId);});
@@ -178,32 +181,14 @@ MOUSEPAD_HTML = """
 
     document.getElementById('langToggle').onclick = function() { fetch('/switch_lang', {method:'POST'}); document.getElementById('keyboard').focus(); };
 
-    const kbInput = document.getElementById('keyboard');
-    let lastValue = ""; let ignore = false;
-    kbInput.addEventListener('input', function(e) {
-      if (ignore) return;
-      const txt = kbInput.value;
-      if (txt.length > lastValue.length) {
-        const add = txt.substring(lastValue.length);
-        fetch('/type', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({text: add}) });
-      } else if (txt.length < lastValue.length) {
-        fetch('/type', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({backspace: true}) });
-      }
-      lastValue = txt;
-    });
-    kbInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        fetch('/focus', {method:'POST'})
-          .then(() =>
-            fetch('/type', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({text: kbInput.value})
-            })
-          );
-        ignore = true; kbInput.value = ''; lastValue = '';
-        setTimeout(()=>{ ignore = false; }, 100);
+    function sendText() {
+      let txt = document.getElementById('keyboard').value;
+      fetch('/type', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: txt}) }).then(()=>{ document.getElementById('keyboard').value = ''; });
+    }
+    // Відправляти текст по Enter
+    document.getElementById('keyboard').addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault(); sendText();
       }
     });
   </script>
@@ -250,19 +235,10 @@ def mouse_click():
 def type_text():
     data = request.get_json()
     text = data.get('text', '')
-    backspace = data.get('backspace', False)
-    if backspace:
-        pyautogui.press('backspace')
-    elif text:
-        pyautogui.write(text)
-    return jsonify(success=True)
-
-@app.route('/focus', methods=['POST'])
-def focus():
-    width, height = pyautogui.size()
-    pyautogui.click(width//2, height//2)
-    time.sleep(0.07)
-    pyautogui.click(width//2, height//2)
+    if text:
+        pyperclip.copy(text)
+        pyautogui.hotkey('ctrl', 'v')
+        time.sleep(0.05)
     return jsonify(success=True)
 
 @app.route('/switch_lang', methods=['POST'])
