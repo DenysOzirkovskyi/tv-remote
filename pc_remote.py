@@ -150,10 +150,15 @@ JOYSTICK_HTML = """
     body { font-family: sans-serif; background: #000; color: #fff; text-align: center; margin: 0; padding: 2em; }
     .button { display: block; margin: 0.8em auto; padding: 0.8em 1em; color: #fff; font-size: 1.1em; font-weight: bold; border-radius: 8px; background: #009688; max-width: 280px; border: none; }
     .button:hover { background: #26a69a; }
+    #joyContainer { position: relative; margin: 1em auto; width: 200px; height: 200px; background: #222; border-radius: 50%; touch-action: none; }
+    #joyHandle { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; top: 50%; left: 50%; background: #555; border-radius: 50%; }
   </style>
 </head>
 <body>
   <h1>Джойстик</h1>
+  <div id="joyContainer">
+    <div id="joyHandle"></div>
+  </div>
   <button class="button" onclick="scrollPage('up')">⬆️ Прокрутити вгору</button>
   <button class="button" onclick="scrollPage('down')">⬇️ Прокрутити вниз</button>
   <a class="button" href="/">← Назад</a>
@@ -161,6 +166,47 @@ JOYSTICK_HTML = """
     function scrollPage(dir){
       fetch('/scroll/' + dir, {method:'POST'});
     }
+
+    const cont = document.getElementById('joyContainer');
+    const handle = document.getElementById('joyHandle');
+    let jx=0, jy=0, intId=null, active=false;
+
+    function sendMove(){
+      if(jx || jy){
+        fetch('/mouse/move', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({dx: Math.round(jx*10), dy: Math.round(jy*10)})
+        });
+      }
+    }
+
+    function update(e){
+      const r = cont.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width/2;
+      const y = e.clientY - r.top - r.height/2;
+      const max = r.width/2 - 30;
+      const dist = Math.min(Math.hypot(x,y), max);
+      const ang = Math.atan2(y,x);
+      jx = Math.cos(ang)*(dist/max);
+      jy = Math.sin(ang)*(dist/max);
+      handle.style.transform = `translate(${jx*max}px, ${jy*max}px)`;
+    }
+
+    cont.addEventListener('pointerdown', e=>{
+      active=true;
+      cont.setPointerCapture(e.pointerId);
+      update(e);
+      intId = setInterval(sendMove, 50);
+    });
+    cont.addEventListener('pointermove', e=>{ if(active) update(e); });
+    cont.addEventListener('pointerup', e=>{
+      cont.releasePointerCapture(e.pointerId);
+      handle.style.transform='translate(0,0)';
+      jx=0; jy=0; active=false;
+      clearInterval(intId);
+      fetch('/mouse/click', {method:'POST'});
+    });
   </script>
 </body>
 </html>
