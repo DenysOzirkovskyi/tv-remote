@@ -39,6 +39,7 @@ HOME_HTML = """
   <a class='button' href='/power'>Живлення</a>
   <a class='button' href='/displays'>Дисплеї</a>
   <a class='button' href='/multimedia'>Мультимедіа</a>
+  <a class='button' href='/joystick'>Джойстик</a>
   <a class='button' href='/mousepad'>Миша + Клава</a>
 </body>
 </html>
@@ -138,6 +139,33 @@ MULTIMEDIA_HTML = """
 </html>
 """
 
+JOYSTICK_HTML = """
+<!DOCTYPE html>
+<html lang='uk'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Джойстик</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <style>
+    body { font-family: sans-serif; background: #000; color: #fff; text-align: center; margin: 0; padding: 2em; }
+    .button { display: block; margin: 0.8em auto; padding: 0.8em 1em; color: #fff; font-size: 1.1em; font-weight: bold; border-radius: 8px; background: #009688; max-width: 280px; border: none; }
+    .button:hover { background: #26a69a; }
+  </style>
+</head>
+<body>
+  <h1>Джойстик</h1>
+  <button class="button" onclick="scrollPage('up')">⬆️ Прокрутити вгору</button>
+  <button class="button" onclick="scrollPage('down')">⬇️ Прокрутити вниз</button>
+  <a class="button" href="/">← Назад</a>
+  <script>
+    function scrollPage(dir){
+      fetch('/scroll/' + dir, {method:'POST'});
+    }
+  </script>
+</body>
+</html>
+"""
+
 MOUSEPAD_HTML = """
 <!DOCTYPE html>
 <html lang='uk'>
@@ -159,6 +187,8 @@ MOUSEPAD_HTML = """
   <h1>Тачпад + Ввід тексту</h1>
   <button id="langToggle" class="button">🔄 Змінити мову ПК</button>
   <div id='touchpad'></div>
+  <button class="button" onclick="scrollPage('up')">⬆️ Прокрутити вгору</button>
+  <button class="button" onclick="scrollPage('down')">⬇️ Прокрутити вниз</button>
   <form id="kbForm" onsubmit="return false;">
     <textarea id="keyboard" rows="2" autocomplete="on" placeholder="Пиши тут…"></textarea>
     <button type="button" class="button" onclick="sendText()">Відправити</button>
@@ -180,6 +210,10 @@ MOUSEPAD_HTML = """
     tp.addEventListener('pointerup', e => { isDown = false; tp.releasePointerCapture(e.pointerId); fetch('/mouse/click', {method:'POST'}); });
 
     document.getElementById('langToggle').onclick = function() { fetch('/switch_lang', {method:'POST'}); document.getElementById('keyboard').focus(); };
+
+    function scrollPage(dir) {
+      fetch('/scroll/' + dir, {method:'POST'});
+    }
 
     function sendText() {
       let txt = document.getElementById('keyboard').value;
@@ -216,6 +250,10 @@ def displays():
 def multimedia():
     return render_template_string(MULTIMEDIA_HTML)
 
+@app.route('/joystick')
+def joystick():
+    return render_template_string(JOYSTICK_HTML)
+
 @app.route('/mousepad')
 def mousepad():
     return render_template_string(MOUSEPAD_HTML)
@@ -229,6 +267,12 @@ def mouse_move():
 @app.route('/mouse/click', methods=['POST'])
 def mouse_click():
     pyautogui.click()
+    return jsonify(success=True)
+
+@app.route('/scroll/<direction>', methods=['POST'])
+def scroll_page(direction):
+    amt = 500 if direction == 'up' else -500
+    pyautogui.scroll(amt)
     return jsonify(success=True)
 
 @app.route('/type', methods=['POST'])
